@@ -1,12 +1,11 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const User = require("../models/User");
 
-// Initialize Gemini client
+// ✅ Correct Gemini client initialization
 const genAI = new GoogleGenerativeAI({
-  apiKey: process.env.GEMINI_API_KEY,
-  baseUrl: "https://generativelanguage.googleapis.com/v1", // ✅ forces v1 endpoint
+  apiKey: process.env.GEMINI_API_KEY,      // MUST be GEMINI_API_KEY
+  baseUrl: "https://generativelanguage.googleapis.com/v1"
 });
-
 
 exports.getChatResponse = async (req, res) => {
   const { message, history } = req.body;
@@ -14,9 +13,10 @@ exports.getChatResponse = async (req, res) => {
   try {
     const lowerMsg = message.toLowerCase().trim();
 
-    // Appreciation / small talk detection
+    // Appreciation detection
     const appreciationRegex =
       /\b(thanks|thank you|good work|nice|awesome|great|cool|well done|good bot|helpful|ok|okay|good)\b/;
+
     if (appreciationRegex.test(lowerMsg)) {
       const quickReplies = [
         "👍 Glad you found it useful!",
@@ -26,10 +26,11 @@ exports.getChatResponse = async (req, res) => {
       ];
       const reply =
         quickReplies[Math.floor(Math.random() * quickReplies.length)];
+
       return res.json({ role: "assistant", content: reply });
     }
 
-    // --- Special instructions ---
+    // Special instructions
     const wantsShort =
       /\bshort(en|ly)?\b/.test(lowerMsg) || lowerMsg.includes("short");
     const wantsOneLine =
@@ -39,18 +40,18 @@ exports.getChatResponse = async (req, res) => {
     // Telugu detection
     const isTelugu = /[\u0C00-\u0C7F]/.test(message);
 
-    // Definition request detection (Telugu + English)
+    // Definition request
     const isDefinitionRequest =
       /(gurinchi|cheppu|chepu)/.test(lowerMsg) ||
       /\b(what is|explain|tell me about|definition of)\b/.test(lowerMsg);
 
-    // --- Fetch user skills from DB ---
+    // Fetch user skills
     const user = await User.findById(req.user.id).select("skills");
     const userSkills = user?.skills?.length
       ? user.skills.map((s) => `${s.skillName} (${s.proficiency})`).join(", ")
       : "None";
 
-    // --- Build system context ---
+    // Build system context
     let systemContext;
     if (isTelugu && isDefinitionRequest) {
       systemContext = `The user is asking for a definition/explanation in Telugu.`;
@@ -60,13 +61,13 @@ exports.getChatResponse = async (req, res) => {
       systemContext = `The user is asking for career advice. They have the following skills: ${userSkills}.`;
     }
 
-    // --- Build chat history ---
+    // Build chat history
     const chatHistory = (history || []).map((msg) => ({
       role: msg.role,
       parts: [{ text: msg.content }],
     }));
 
-    // --- Build final message ---
+    // Build final message
     let finalMessage = `${systemContext}\nUser: ${message}`;
     if (wantsShort) {
       finalMessage += "\nAssistant: Please answer briefly in 2-3 sentences.";
@@ -79,9 +80,10 @@ exports.getChatResponse = async (req, res) => {
         "\nAssistant: Respond in Telugu language, focusing on career guidance.";
     }
 
-    // ✅ Correct Gemini model + v1 API
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
-
+    // Correct Gemini model usage
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash-latest",
+    });
 
     const result = await model.generateContent({
       contents: [...chatHistory, { role: "user", parts: [{ text: finalMessage }] }],
