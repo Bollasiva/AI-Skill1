@@ -5,3 +5,6 @@ google-genai
 pymongo
 pandas
 gunicorn
+tqdm
+scikit-learn
+numpy
