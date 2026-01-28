@@ -9,3 +9,4 @@ pandas
 statsmodels
 textblob
 gunicorn
+pymongo
