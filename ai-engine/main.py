@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 from pymongo import MongoClient
 from tqdm.auto import tqdm
 from sklearn.linear_model import LinearRegression
+from flask import Flask, jsonify
+import threading
 
 import spacy
 from spacy.matcher import PhraseMatcher
@@ -193,3 +195,20 @@ def main():
 # -------------------------------
 if __name__ == "__main__":
     main()
+
+
+app = Flask(__name__)
+
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({"status": "AI Engine is running"}), 200
+
+def run_pipeline():
+    # This runs your existing main logic
+    main()
+
+if __name__ == "__main__":
+    # Start the data processing in a separate thread so the web server can start immediately
+    threading.Thread(target=run_pipeline).start()
+    # Start the Flask server
+    app.run(host='0.0.0.0', port=os.getenv("PORT", 5001))

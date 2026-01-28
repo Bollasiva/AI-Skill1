@@ -2,9 +2,10 @@ flask
 flask-cors
 python-dotenv
 google-genai
-pymongo
+pdfplumber
+spacy
+serpapi
 pandas
+statsmodels
+textblob
 gunicorn
-tqdm
-scikit-learn
-numpy
